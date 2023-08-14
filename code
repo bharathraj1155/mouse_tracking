@@ -1,0 +1,70 @@
+import pyautogui
+import tkinter as tk
+from pynput.mouse import Listener
+
+class SignatureApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Signature App")
+        
+        # Get screen resolution
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        
+        # Calculate canvas size
+        canvas_width = int(screen_width * 0.8)
+        canvas_height = int(screen_height * 0.8)
+        
+        # Create the canvas
+        self.canvas = tk.Canvas(self.root, width=canvas_width, height=canvas_height, bg='white')
+        self.canvas.pack()
+        
+        self.last_x, self.last_y = None, None
+        self.canvas.bind("<B1-Motion>", self.draw)
+        self.canvas.bind("<ButtonRelease-1>", self.reset_last_position)
+        
+        self.clear_button = tk.Button(self.root, text="Clear", command=self.clear_canvas)
+        self.clear_button.pack()
+        
+        self.cursor_label = tk.Label(self.root, text="", font=("Helvetica", 16))
+        self.cursor_label.pack()
+
+        self.update_cursor_label()
+
+    def draw(self, event):
+        x, y = event.x, event.y
+        if self.last_x is not None and self.last_y is not None:
+            self.canvas.create_line(self.last_x, self.last_y, x, y, width=2)
+        self.last_x, self.last_y = x, y
+
+    def reset_last_position(self, event):
+        self.last_x, self.last_y = None, None
+
+    def clear_canvas(self):
+        self.canvas.delete("all")
+        self.last_x, self.last_y = None, None
+
+    def update_cursor_label(self):
+        x, y = pyautogui.position()
+        self.cursor_label.config(text=f"X: {x}, Y: {y}")
+        self.root.after(50, self.update_cursor_label) 
+
+def on_move(x, y):
+    print('Mouse moved to ({0}, {1})'.format(x, y))
+
+def on_click(x, y, button, pressed):
+    if pressed:
+        print('Mouse clicked at ({0}, {1}) with {2}'.format(x, y, button))
+    else:
+        print('Mouse released at ({0}, {1}) with {2}'.format(x, y, button))
+
+def on_scroll(x, y, dx, dy):
+    print('Mouse scrolled at ({0}, {1})({2}, {3})'.format(x, y, dx, dy))
+
+root = tk.Tk()
+root.title("Drawing Space")
+app = SignatureApp(root)
+
+with Listener(on_move=on_move, on_click=on_click, on_scroll=on_scroll) as listener:
+    root.mainloop()
+    listener.join()
